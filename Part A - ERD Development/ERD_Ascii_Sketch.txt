@@ -1,0 +1,215 @@
+================================================================================
+  HEALTHCARE APPOINTMENT MANAGEMENT SYSTEM - ERD (ASCII SKETCH)
+  Crow's Foot Notation
+================================================================================
+
+                          ┌─────────────────────┐
+                          │    DEPARTMENT       │
+                          ├─────────────────────┤
+                          │ PK  DepartmentID    │
+                          │     DepartmentName  │
+                          │     DepartmentDesc  │
+                          │     DepartmentPhone │
+                          └──────────┬──────────┘
+                                     │
+                                     │ 1:M (employs)
+                                     │ One department has many doctors
+                                     │
+                          ┌──────────▼──────────┐
+                          │       DOCTOR        │
+                          ├─────────────────────┤
+                          │ PK  DoctorID        │
+                          │ FK  DepartmentID    │
+                          │     FirstName       │
+                          │     LastName        │
+                          │     Specialization  │
+                          │     ContactNumber   │
+                          │     Email           │
+                          └──────────┬──────────┘
+                                     │
+                                     │ 1:M (attends)
+                                     │ One doctor attends many appointments
+                                     │
+                    ┌────────────────▼────────────────┐
+                    │       APPOINTMENT               │
+                    ├─────────────────────────────────┤
+                    │ PK  AppointmentID               │
+                    │ FK  PatientID                   │
+                    │ FK  DoctorID                    │
+                    │     AppointmentDate             │
+                    │     AppointmentTime             │
+                    │     AppointmentStatus           │
+                    │     ReasonForVisit              │
+                    │     BookingDate                 │
+                    └────────────────┬────────────────┘
+                                     │
+                                     │ 1:1 (results in)
+                                     │ Every appointment generates one consultation
+                                     │
+                    ┌────────────────▼────────────────┐
+                    │     CONSULTATION                │
+                    ├─────────────────────────────────┤
+                    │ PK  ConsultationID              │
+                    │ FK  AppointmentID (UNIQUE)      │
+                    │     ConsultationDate            │
+                    │     ConsultationNotes           │
+                    │     Diagnosis                   │
+                    │     Treatment                   │
+                    │     FollowUpDate                │
+                    └─────────────────────────────────┘
+                             ▲
+                             │
+                             │ 1:M (books)
+                             │ One patient books many appointments
+                             │
+                    ┌────────┴────────────┐
+                    │      PATIENT        │
+                    ├─────────────────────┤
+                    │ PK  PatientID       │
+                    │     FirstName       │
+                    │     LastName        │
+                    │     DateOfBirth     │
+                    │     Gender          │
+                    │     PhoneNumber     │
+                    │     Email           │
+                    │     Address         │
+                    │     RegistrationDate│
+                    └─────────────────────┘
+
+
+================================================================================
+LEGEND:
+================================================================================
+
+PK = Primary Key (uniquely identifies each record in the entity)
+FK = Foreign Key (links to primary key of another entity)
+
+Crow's Foot Symbols:
+  —— = One
+  —o = Zero or One
+  —{ = Many
+  —o{ = Zero or Many (optional, many)
+
+Relationship Lines:
+  One-to-Many (1:M):      Entity1 ——o{ Entity2
+  One-to-One (1:1):       Entity1 —— Entity2
+  Zero-to-Many (0:M):     Entity1 —o{ Entity2
+  Many-to-Many (M:N):     Entity1 —o{ Entity2 —o{ Entity1
+
+================================================================================
+RELATIONSHIPS SUMMARY:
+================================================================================
+
+1. DEPARTMENT 1:M DOCTOR (employs)
+   └─ One department employs many doctors
+   └─ Each doctor belongs to exactly one department
+   └─ Foreign Key: Doctor.DepartmentID → Department.DepartmentID
+
+2. DOCTOR 1:M APPOINTMENT (attends)
+   └─ One doctor attends many appointments
+   └─ Each appointment has exactly one doctor
+   └─ Foreign Key: Appointment.DoctorID → Doctor.DoctorID
+
+3. PATIENT 1:M APPOINTMENT (books)
+   └─ One patient books many appointments
+   └─ Each appointment belongs to exactly one patient
+   └─ Foreign Key: Appointment.PatientID → Patient.PatientID
+
+4. APPOINTMENT 1:1 CONSULTATION (results in)
+   └─ Every appointment generates exactly one consultation record
+   └─ Each consultation is linked to exactly one appointment
+   └─ Foreign Key: Consultation.AppointmentID → Appointment.AppointmentID (UNIQUE)
+
+5. DOCTOR M:N PATIENT (resolves via APPOINTMENT)
+   └─ A doctor can consult with many patients
+   └─ A patient can consult with many doctors
+   └─ Junction table: APPOINTMENT
+
+
+================================================================================
+CARDINALITY CONSTRAINTS:
+================================================================================
+
+Entity         │ Minimum │ Maximum │ Note
+───────────────┼─────────┼─────────┼──────────────────────────────────────
+Department     │    1    │   ∞     │ Must have at least one doctor
+Doctor         │    1    │    1    │ Must belong to exactly one department
+Patient        │    0    │   ∞     │ Can book zero or many appointments
+Appointment    │    1    │    1    │ Must have one patient and one doctor
+Consultation   │    1    │    1    │ Must result from one appointment
+
+
+================================================================================
+PRIMARY KEYS (PK) - UNIQUELY IDENTIFY EACH RECORD:
+================================================================================
+
+DEPARTMENT:     DepartmentID (System-generated, stable)
+DOCTOR:         DoctorID (System-generated, stable, independent of personal details)
+PATIENT:        PatientID (System-generated, stable, handles privacy)
+APPOINTMENT:    AppointmentID (System-generated, unique booking reference)
+CONSULTATION:   ConsultationID (System-generated, unique medical record)
+
+
+================================================================================
+FOREIGN KEYS (FK) - ESTABLISH RELATIONSHIPS:
+================================================================================
+
+Table         │ Foreign Key    │ References
+───────────────┼────────────────┼─────────────────────────────────────
+DOCTOR         │ DepartmentID   │ DEPARTMENT.DepartmentID
+APPOINTMENT    │ PatientID      │ PATIENT.PatientID
+APPOINTMENT    │ DoctorID       │ DOCTOR.DoctorID
+CONSULTATION   │ AppointmentID  │ APPOINTMENT.AppointmentID
+
+
+================================================================================
+SYSTEM REQUIREMENTS SUPPORT:
+================================================================================
+
+✓ Patients register and maintain profiles
+  → Stored in PATIENT table with all personal details
+
+✓ Patients book appointments with doctors
+  → APPOINTMENT links PATIENT to DOCTOR via foreign keys
+
+✓ Patients cancel or reschedule appointments
+  → AppointmentStatus field handles: Booked, Cancelled, Rescheduled, Completed
+
+✓ Doctors view daily appointment schedules
+  → Query APPOINTMENT joined with DOCTOR filtered by date and DoctorID
+
+✓ Doctors record consultation notes
+  → CONSULTATION table stores notes, diagnosis, treatment, follow-up date
+
+✓ Receptionists create and manage appointments
+  → Receptionists insert/update/delete records in APPOINTMENT table
+
+✓ Each doctor belongs to a department
+  → DOCTOR.DepartmentID foreign key enforces this relationship
+
+✓ Patient may book multiple appointments
+  → 1:M relationship between PATIENT and APPOINTMENT
+
+✓ Doctor may attend multiple patients
+  → 1:M relationship between DOCTOR and APPOINTMENT
+  → Many-to-many resolved through APPOINTMENT junction
+
+✓ Every appointment results in consultation record
+  → 1:1 relationship enforced: APPOINTMENT generates CONSULTATION
+
+✓ Reports on patient visits, doctor workloads, departmental performance
+  → Can query across PATIENT, APPOINTMENT, DOCTOR, DEPARTMENT, CONSULTATION
+
+================================================================================
+NORMALIZATION STATUS: THIRD NORMAL FORM (3NF)
+================================================================================
+
+✓ 1NF: All attributes contain atomic values (single values, no repeating groups)
+✓ 2NF: No partial dependencies (non-key attributes fully depend on primary key)
+✓ 3NF: No transitive dependencies (non-key attributes depend only on primary key)
+
+Each table stores one entity concept.
+No redundant data across tables.
+All relationships properly normalized through foreign keys.
+
+================================================================================
